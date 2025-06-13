@@ -809,7 +809,15 @@ QVariantMap Api::cloud(QVariantMap query) {
     );
     return {
         { "status", 200 },
-        { "body", QCloudMusicApi::Index::mergeMap(res["body"].toMap(), res3["body"].toMap()) },
+        { "body", 
+            QCloudMusicApi::Index::mergeMap(
+                QCloudMusicApi::Index::mergeMap(
+                    res["body"].toMap(),
+                    res2["body"].toMap()
+                ),
+                res3["body"].toMap()
+            )
+        },
         { "cookie", res["cookie"] }
     };
 }
