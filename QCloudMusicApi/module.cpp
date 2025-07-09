@@ -807,17 +807,16 @@ QVariantMap Api::cloud(QVariantMap query) {
         },
         Option::createOption(query, "weapi")
     );
+
+    const QVariantMap packedRes = {
+        { "res", res["body"].toMap() },
+        { "res2", res2["body"].toMap() },
+        { "res3", res3["body"].toMap() }
+    };
+
     return {
         { "status", 200 },
-        { "body", 
-            QCloudMusicApi::Index::mergeMap(
-                QCloudMusicApi::Index::mergeMap(
-                    res["body"].toMap(),
-                    res2["body"].toMap()
-                ),
-                res3["body"].toMap()
-            )
-        },
+        { "body", packedRes },
         { "cookie", res["cookie"] }
     };
 }
