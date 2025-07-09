@@ -775,8 +775,16 @@ QVariantMap Api::cloud(QVariantMap query) {
         Option::createOption(query, "weapi")
     );
 
-    if (res["body"].toMap()["needUpload"].toBool()) {
-        const auto uploadInfo = QCloudMusicApi::Plugins::songUpload(query);
+    QVariantMap uploadInfo = {};
+
+    bool needUpload = res["body"].toMap()["needUpload"].toBool();
+
+    if (query.contains("needUpload")) {
+        needUpload |= query["needUpload"].toBool();
+    }
+
+    if (needUpload) {
+        uploadInfo = QCloudMusicApi::Plugins::songUpload(query);
     }
     const auto res2 = request(
         "/api/upload/cloud/info/v2",
@@ -811,7 +819,8 @@ QVariantMap Api::cloud(QVariantMap query) {
     const QVariantMap packedRes = {
         { "res", res["body"].toMap() },
         { "res2", res2["body"].toMap() },
-        { "res3", res3["body"].toMap() }
+        { "res3", res3["body"].toMap() },
+        { "uploadInfo", uploadInfo }
     };
 
     return {
