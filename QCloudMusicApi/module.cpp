@@ -785,6 +785,12 @@ QVariantMap Api::cloud(QVariantMap query) {
 
     if (needUpload) {
         uploadInfo = QCloudMusicApi::Plugins::songUpload(query);
+        if (!uploadInfo.value("success").toBool()) {
+            return {
+                { "status", 500 },
+                { "body", uploadInfo["error"] }
+            };
+        }
     }
     const auto res2 = request(
         "/api/upload/cloud/info/v2",
@@ -5009,4 +5015,3 @@ QVariantMap Api::yunbei(QVariantMap query) {
         Option::createOption(query, "weapi")
     );
 }
-
