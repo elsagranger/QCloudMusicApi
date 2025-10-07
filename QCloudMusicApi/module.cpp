@@ -735,6 +735,7 @@ QVariantMap Api::cloud(QVariantMap query) {
         songFile["size"] = data.length();
         query["songFile"] = songFile;
     }
+    query["domain"] = "https://interface.music.163.com";
     const QVariantMap res = request(
         "/api/cloud/upload/check",
         {
@@ -761,6 +762,7 @@ QVariantMap Api::cloud(QVariantMap query) {
         songName = query["songName"].toString();
     }
 
+    query["domain"] = "https://music.163.com";
     const auto tokenRes = request(
         "/api/nos/token/alloc",
         {
@@ -792,6 +794,7 @@ QVariantMap Api::cloud(QVariantMap query) {
             };
         }
     }
+    query["domain"] = "https://music.163.com";
     const auto res2 = request(
         "/api/upload/cloud/info/v2",
         {
@@ -814,6 +817,7 @@ QVariantMap Api::cloud(QVariantMap query) {
         };
     }
 
+    query["domain"] = "https://interface.music.163.com";
     const auto res3 = request(
         "/api/cloud/pub/v2",
         {

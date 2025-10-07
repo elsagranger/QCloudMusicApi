@@ -5,6 +5,7 @@ QVariantMap Option::createOption(QVariantMap query, QString crypto)
 {
     QVariantMap result;
     auto func = [&](QString key) { if (query.contains(key)) result[key] = query[key]; };
+    // result["crypto"] = crypto;
     for (auto i: { "crypto", "cookie", "ua", "proxy", "realIP", "e_r", "domain" }) func(i);
     return result;
 }
