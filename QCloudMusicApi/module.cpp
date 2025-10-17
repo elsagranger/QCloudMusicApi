@@ -8,6 +8,8 @@
 #include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QCryptographicHash>
+#include <QFile>
+#include <QFileInfo>
 
 #include <algorithm>
 
@@ -699,15 +701,6 @@ QVariantMap Api::cloud_match(QVariantMap query) {
 
 // 云盘上传
 QVariantMap Api::cloud(QVariantMap query) {
-    QString ext = "mp3";
-    if (query.value("songFile").toMap()["name"].toString().toLower().indexOf("flac") > -1) {
-        ext = "flac";
-    }
-    QString filename = query.value("songFile").toMap()["name"].toString()
-        .replace("." + ext, "")
-        .replace(QRegularExpression("\\s"), "")
-        .replace(QRegularExpression("\\."), "_");
-    const auto bitrate = 999000;
     if (!query.contains("songFile")) {
         return {
             { "status", 500 },
@@ -720,11 +713,79 @@ QVariantMap Api::cloud(QVariantMap query) {
         };
     }
 
-    if (query.contains("dataAsBase64")) {
-        auto songFile = query["songFile"].toMap();
+    const bool dataInPath = query.value("dataInPath").toBool();
+    QVariant songFileVariant = query.value("songFile");
+    QVariantMap songFile = songFileVariant.toMap();
+    QString resolvedPath;
+
+    if (dataInPath) {
+        if (songFileVariant.userType() == QMetaType::QString) {
+            resolvedPath = songFileVariant.toString();
+            songFile = {};
+        }
+        if (resolvedPath.isEmpty()) {
+            resolvedPath = songFile.value("path").toString();
+        }
+        if (resolvedPath.isEmpty()) {
+            resolvedPath = songFile.value("data").toString();
+        }
+        if (resolvedPath.isEmpty()) {
+            return {
+                { "status", 500 },
+                { "body", QVariantMap{
+                      { "msg", QStringLiteral("请提供有效的文件路径") },
+                      { "code", 500 }
+                  } }
+            };
+        }
+
+        QFile file(resolvedPath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            return {
+                { "status", 500 },
+                { "body", QVariantMap{
+                      { "msg", QStringLiteral("读取文件失败: %1").arg(file.errorString()) },
+                      { "code", 500 }
+                  } }
+            };
+        }
+
+        const QByteArray fileBytes = file.readAll();
+        file.close();
+        songFile["data"] = fileBytes;
+        songFile["path"] = resolvedPath;
+        if (songFile.value("name").toString().isEmpty()) {
+            songFile["name"] = QFileInfo(resolvedPath).fileName();
+        }
+        query["songFile"] = songFile;
+    }
+
+    const bool dataAsBase64 = query.value("dataAsBase64").toBool();
+    songFile = query["songFile"].toMap();
+    if (dataAsBase64 && !dataInPath) {
         songFile["data"] = QByteArray::fromBase64(songFile["data"].toByteArray());
         query["songFile"] = songFile;
     }
+
+    songFile = query["songFile"].toMap();
+    QString songFileName = songFile.value("name").toString();
+    if (songFileName.isEmpty()) {
+        songFileName = QStringLiteral("upload.mp3");
+        songFile["name"] = songFileName;
+        query["songFile"] = songFile;
+    }
+
+    QString ext = "mp3";
+    if (songFileName.toLower().indexOf("flac") > -1) {
+        ext = "flac";
+    }
+
+    QString filename = songFileName;
+    filename.replace(QStringLiteral(".") + ext, "", Qt::CaseInsensitive);
+    filename.replace(QRegularExpression("\\s"), "");
+    filename.replace(QRegularExpression("\\."), "_");
+
+    const auto bitrate = 999000;
 
     if (!query["songFile"].toMap().contains("md5")) {
         auto songFile = query["songFile"].toMap();
